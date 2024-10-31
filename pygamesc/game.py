@@ -2,6 +2,10 @@ import pygame
 import random
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+import graphviz
 
 # Inicializar Pygame
 pygame.init()
@@ -155,6 +159,41 @@ def guardar_datos():
     # Guardar velocidad de la bala, distancia al jugador y si saltó o no
     datos_modelo.append((velocidad_bala, distancia, salto_hecho))
 
+#funcion para generar nuestro arbol
+def generar_arbol(datos_modelo):
+
+    dataset = pd.DataFrame(datos_modelo, columns=['Feature 1', 'Feature 2', 'Label'])
+
+    # Eliminar columnas innecesarias (como la vacía "Unnamed: 3")
+    #dataset = dataset.drop(columns=['Unnamed: 3'])
+
+    # Definir características (X) y etiquetas (y)
+    X = dataset.iloc[:, :2]  # Las dos primeras columnas son las características
+    y = dataset.iloc[:, 2]   # La tercera columna es la etiqueta
+
+    # Dividir los datos en conjunto de entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Crear el clasificador de Árbol de Decisión
+    clf = DecisionTreeClassifier()
+
+    # Entrenar el modelo
+    clf.fit(X_train, y_train)
+
+    # Exportar el árbol de decisión en formato DOT para su visualización
+    dot_data = export_graphviz(clf, out_file=None, 
+                            feature_names=['Feature 1', 'Feature 2'],  
+                            class_names=['Clase 0', 'Clase 1'],  
+                            filled=True, rounded=True,  
+                            special_characters=True)  
+
+    # Crear el gráfico con graphviz
+    graph = graphviz.Source(dot_data)
+
+    # Mostrar el gráfico
+    graph.view()
+
+
 # Función para pausar el juego y guardar los datos
 def pausa_juego():
     global pausa
@@ -186,11 +225,15 @@ def mostrar_menu():
                     menu_activo = False
                 elif evento.key == pygame.K_g:
                     print("Datos recopilados:", datos_modelo)
-                    graficar_datos_3d(datos_modelo)
+                    ##graficar_datos_3d(datos_modelo)
+                    generar_arbol(datos_modelo)
                 elif evento.key == pygame.K_q:
                     print("Juego terminado. Datos recopilados:", datos_modelo)
                     pygame.quit()
                     exit()
+
+
+
 
 #funcion para graficar los datos
 def graficar_datos_3d(datos_modelo):
